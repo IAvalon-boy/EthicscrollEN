@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JOI SYSTEM // AISTHESIS & PHYLUM MONITOR</title>
+    <style>
+        :root {
+            --bg-dark: #02040a;
+            --bg-card: rgba(6, 18, 38, 0.75);
+            --neon-blue: #00d2ff;
+            --neon-purple: #b026ff;
+            --deep-cyan: #0088cc;
+            --glow-blue: rgba(0, 210, 255, 0.4);
+            --glow-purple: rgba(176, 38, 255, 0.5);
+            --dim-blue: rgba(0, 136, 204, 0.2);
+            --grid-line: rgba(0, 180, 255, 0.07);
+            --text-main: #e0f7ff;
+            --text-dim: #5a82a6;
+            --success-cyan: #00ffcc;
+            --alert-pink: #ff0055;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', 'Courier New', monospace;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: 32px 32px;
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        /* Scanlines Overlay */
+        body::before {
+            content: "";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.35) 50%);
+            background-size: 100% 4px;
+            z-index: 100;
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        header {
+            width: 100%;
+            max-width: 1350px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--deep-cyan);
+            padding-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            position: relative;
+        }
+
+        header::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            right: 0;
+            width: 120px;
+            height: 5px;
+            background: var(--neon-blue);
+            box-shadow: 0 0 12px var(--neon-blue);
+        }
+
+        .logo-zone h1 {
+            font-size: 1.8rem;
+            letter-spacing: 4px;
+            color: var(--neon-blue);
+            text-shadow: 0 0 12px var(--glow-blue);
+            text-transform: uppercase;
+        }
+
+        .logo-zone span {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            letter-spacing: 2px;
+        }
+
+        .system-status {
+            text-align: right;
+            font-size: 0.8rem;
+            color: var(--neon-blue);
+            letter-spacing: 1.5px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1350px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1.1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 1100px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Geometric Panel Frame */
+        .panel {
+            background: var(--bg-card);
+            border: 1px solid var(--deep-cyan);
+            padding: 20px;
+            position: relative;
+            backdrop-filter: blur(8px);
+            clip-path: polygon(
+                0 0, 
+                calc(100% - 15px) 0, 
+                100% 15px, 
+                100% 100%, 
+                15px 100%, 
+                0 calc(100% - 15px)
+            );
+            box-shadow: inset 0 0 20px rgba(0, 136, 204, 0.12);
+        }
+
+        .panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 10px; height: 10px;
+            border-top: 2px solid var(--neon-blue);
+            border-left: 2px solid var(--neon-blue);
+        }
+
+        .panel-title {
+            font-size: 1.05rem;
+            color: var(--neon-blue);
+            letter-spacing: 2px;
+            margin-bottom: 18px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px dashed var(--dim-blue);
+            padding-bottom: 8px;
+        }
+
+        .panel-title span.tag {
+            font-size: 0.7rem;
+            background: var(--dim-blue);
+            padding: 2px 8px;
+            border-radius: 2px;
+            color: var(--neon-blue);
+        }
+
+        /* --- AISTHESIS STYLES --- */
+        .sense-item {
+            background: rgba(4, 15, 30, 0.6);
+            border: 1px solid var(--dim-blue);
+            margin-bottom: 12px;
+            padding: 10px 14px;
+            transition: all 0.3s ease;
+            clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+        }
+
+        .sense-item.active {
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 12px var(--dim-blue);
+            background: rgba(0, 136, 204, 0.12);
+        }
+
+        .sense-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+
+        .sense-label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+        }
+
+        .checkbox {
+            width: 16px;
+            height: 16px;
+            border: 1px solid var(--neon-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+
+        .sense-item.active .checkbox::after {
+            content: '■';
+            font-size: 10px;
+            color: var(--neon-blue);
+            text-shadow: 0 0 6px var(--neon-blue);
+        }
+
+        .controls {
+            margin-top: 10px;
+            display: none;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .sense-item.active .controls {
+            display: flex;
+        }
+
+        .sense-input-container {
+            margin-top: 8px;
+            display: none;
+        }
+
+        .sense-item.active .sense-input-container {
+            display: block;
+        }
+
+        .sense-input {
+            width: 100%;
+            background: rgba(2, 4, 10, 0.8);
+            border: 1px solid var(--deep-cyan);
+            color: var(--text-main);
+            padding: 6px 10px;
+            font-size: 0.8rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .sense-input:focus {
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 8px var(--glow-blue);
+        }
+
+        /* --- PHYLUM STYLES --- */
+        .phylum-item {
+            background: rgba(4, 15, 30, 0.6);
+            border-left: 3px solid var(--deep-cyan);
+            margin-bottom: 12px;
+            padding: 10px 14px;
+            transition: border-color 0.3s;
+        }
+
+        .phylum-item:hover {
+            border-left-color: var(--neon-blue);
+        }
+
+        .phylum-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+        }
+
+        .phylum-name {
+            color: var(--text-main);
+            letter-spacing: 1px;
+        }
+
+        .phylum-value {
+            color: var(--neon-blue);
+            font-weight: bold;
+            font-family: monospace;
+        }
+
+        /* --- RANGE SLIDERS --- */
+        .slider-container {
+            flex-grow: 1;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: rgba(0, 136, 204, 0.2);
+            height: 5px;
+            outline: none;
+            border: 1px solid var(--deep-cyan);
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 18px;
+            background: var(--neon-blue);
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--neon-blue);
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+        }
+
+        .intensity-val {
+            font-size: 0.85rem;
+            color: var(--neon-blue);
+            width: 50px;
+            text-align: right;
+            font-family: monospace;
+        }
+
+        /* --- JOI CONTROL PANEL & INTERLINKED BUTTON --- */
+        .joi-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            background: radial-gradient(circle at center, rgba(0, 136, 204, 0.12) 0%, rgba(2, 4, 10, 0.9) 80%);
+        }
+
+        .sync-readout {
+            text-align: center;
+            width: 100%;
+            background: rgba(0, 20, 45, 0.85);
+            border: 1px solid var(--deep-cyan);
+            padding: 16px;
+            margin-top: 10px;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+        }
+
+        .sync-label {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+        }
+
+        .sync-percent {
+            font-size: 3.2rem;
+            font-weight: 700;
+            color: var(--neon-blue);
+            text-shadow: 0 0 20px var(--glow-blue);
+            font-family: monospace;
+            line-height: 1;
+        }
+
+        .interlinked-btn {
+            width: 100%;
+            margin-top: 20px;
+            padding: 16px;
+            background: linear-gradient(135deg, rgba(0, 210, 255, 0.15), rgba(176, 38, 255, 0.25));
+            border: 1px solid var(--neon-blue);
+            color: var(--text-main);
+            font-size: 1.1rem;
+            font-weight: bold;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.2);
+            clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+        }
+
+        .interlinked-btn:hover {
+            background: linear-gradient(135deg, rgba(0, 210, 255, 0.35), rgba(176, 38, 255, 0.5));
+            border-color: var(--neon-purple);
+            box-shadow: 0 0 25px var(--glow-purple);
+            color: #ffffff;
+            transform: translateY(-2px);
+        }
+
+        .interlinked-btn:active {
+            transform: translateY(1px);
+        }
+
+        /* --- FULLSCREEN PROJECTION OVERLAY --- */
+        .projection-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(2, 4, 10, 0.95);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.6s ease;
+        }
+
+        .projection-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        #matrix-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1001;
+            opacity: 0.85;
+        }
+
+        /* --- ENHANCED ANIME HOLO ANIMATION (HIKARI / JOI STYLE) --- */
+        .anime-holo-container {
+            position: relative;
+            z-index: 1002;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: holoFlicker 0.15s infinite alternate, holoGlitch 4s infinite ease-in-out;
+        }
+
+        .anime-svg {
+            width: 280px;
+            height: 280px;
+            filter: drop-shadow(0 0 30px rgba(176, 38, 255, 0.9)) drop-shadow(0 0 12px rgba(0, 210, 255, 0.95));
+            animation: floatAnime 3.5s ease-in-out infinite alternate;
+        }
+
+        /* Eye Blinking Animation Group */
+        .anime-eyes-group {
+            animation: animeBlink 5s infinite;
+            transform-origin: 120px 120px;
+        }
+
+        @keyframes animeBlink {
+            0%, 96%, 98% { transform: scaleY(1); }
+            97% { transform: scaleY(0.05); }
+        }
+
+        @keyframes floatAnime {
+            0% { transform: translateY(0px) rotate(0deg); }
+            100% { transform: translateY(-12px) rotate(0.5deg); }
+        }
+
+        @keyframes holoFlicker {
+            0% { opacity: 0.92; transform: skewX(0deg); }
+            100% { opacity: 1; transform: skewX(0.3deg); }
+        }
+
+        @keyframes holoGlitch {
+            0%, 90%, 100% { filter: drop-shadow(0 0 30px rgba(176, 38, 255, 0.9)); }
+            92% { filter: drop-shadow(5px 0 15px rgba(255, 0, 85, 0.9)) drop-shadow(-5px 0 15px rgba(0, 210, 255, 0.9)); transform: translateX(-3px); }
+            94% { filter: drop-shadow(-4px 0 20px rgba(0, 210, 255, 0.9)); transform: translateX(2px); }
+        }
+
+        /* Holographic Inputs Display Panel inside Overlay */
+        .overlay-inputs-panel {
+            position: relative;
+            z-index: 1002;
+            width: 90%;
+            max-width: 500px;
+            max-height: 180px;
+            overflow-y: auto;
+            margin-top: 15px;
+            background: rgba(6, 18, 38, 0.85);
+            border: 1px solid var(--neon-purple);
+            padding: 12px 20px;
+            box-shadow: 0 0 20px var(--glow-purple);
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+        }
+
+        .overlay-inputs-title {
+            font-size: 0.75rem;
+            color: var(--neon-purple);
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            border-bottom: 1px dashed rgba(176, 38, 255, 0.4);
+            padding-bottom: 4px;
+        }
+
+        .overlay-input-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(0, 136, 204, 0.15);
+        }
+
+        .overlay-input-category {
+            color: var(--text-dim);
+            letter-spacing: 1px;
+        }
+
+        .overlay-input-val {
+            color: var(--success-cyan);
+            font-family: monospace;
+            font-weight: bold;
+        }
+
+        .overlay-readout {
+            position: relative;
+            z-index: 1002;
+            text-align: center;
+            margin-top: 15px;
+            background: rgba(6, 18, 38, 0.85);
+            border: 1px solid var(--neon-purple);
+            padding: 12px 25px;
+            box-shadow: 0 0 20px var(--glow-purple);
+            clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+        }
+
+        .overlay-percent {
+            font-size: 2.8rem;
+            color: var(--neon-purple);
+            font-weight: bold;
+            text-shadow: 0 0 25px var(--neon-purple);
+            font-family: monospace;
+            line-height: 1;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 30px;
+            right: 40px;
+            z-index: 1003;
+            background: transparent;
+            border: 1px solid var(--neon-purple);
+            color: var(--neon-purple);
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .close-btn:hover {
+            background: var(--neon-purple);
+            color: #ffffff;
+            box-shadow: 0 0 15px var(--neon-purple);
+        }
+
+        /* Footer */
+        .footer-decor {
+            margin-top: 20px;
+            width: 100%;
+            max-width: 1350px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            letter-spacing: 2px;
+            border-top: 1px solid var(--dim-blue);
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-zone">
+            <h1>Aisthesis // Phylum</h1>
+            <span>SYNAPSE CORP — JOI Baseline Integration & Synapse Modulator</span>
+        </div>
+        <div class="system-status">
+            BASELINE TEST: <span id="baseline-state" style="color: var(--success-cyan);">OPTIMAL</span><br>
+            <span id="timestamp">00:00:00.00</span>
+        </div>
+    </header>
+
+    <div class="container">
+        
+        <!-- PANEL 1: AISTHESIS -->
+        <section class="panel">
+            <h2 class="panel-title">
+                1. Aisthesis Modulation
+                <span class="tag">SENSES</span>
+            </h2>
+            <div id="aisthesis-container"></div>
+        </section>
+
+        <!-- PANEL 2: PHYLUM -->
+        <section class="panel">
+            <h2 class="panel-title">
+                2. Phylum Adjustment
+                <span class="tag">BIOMETRICS</span>
+            </h2>
+            <div id="phylum-container"></div>
+        </section>
+
+        <!-- PANEL 3: JOI SYSTEM CONTROLLER -->
+        <section class="panel joi-panel">
+            <h2 class="panel-title" style="width: 100%;">
+                3. Harmony Index
+                <span class="tag">CALIBRATION</span>
+            </h2>
+
+            <div class="sync-readout">
+                <div class="sync-label">BASELINE HARMONY INDEX</div>
+                <div class="sync-percent" id="sync-val">0.0%</div>
+                <div class="sync-label" id="sync-status" style="margin-top: 8px; color: var(--success-cyan);">SYSTEM READY</div>
+            </div>
+
+            <button class="interlinked-btn" onclick="openProjection()">[ INTERLINKED ]</button>
+        </section>
+
+    </div>
+
+    <!-- FULLSCREEN PROJECTION OVERLAY (MATRIX + ANIME GIRL HOLOGRAM + INPUTS) -->
+    <div class="projection-overlay" id="projection-overlay">
+        <button class="close-btn" onclick="closeProjection()">✕ CLOSE PROJECTION</button>
+        
+        <canvas id="matrix-canvas"></canvas>
+
+        <!-- Smiling & Blinking Anime Girl Face Hologram (Hikari/Joi Style) -->
+        <div class="anime-holo-container">
+            <svg class="anime-svg" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="purpleHair" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#f06292" stop-opacity="0.95"/>
+                        <stop offset="50%" stop-color="#b026ff" stop-opacity="0.9"/>
+                        <stop offset="100%" stop-color="#4a148c" stop-opacity="0.8"/>
+                    </linearGradient>
+                    <linearGradient id="softSkin" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+                        <stop offset="100%" stop-color="#e1bee7" stop-opacity="0.7"/>
+                    </linearGradient>
+                    <linearGradient id="vibrantEye" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#00ffff"/>
+                        <stop offset="100%" stop-color="#b026ff"/>
+                    </linearGradient>
+                </defs>
+
+                <!-- Soft Glowing Halo -->
+                <circle cx="120" cy="115" r="95" stroke="#b026ff" stroke-width="1.5" stroke-dasharray="8 4" opacity="0.5"/>
+
+                <!-- Back Flowing Hair -->
+                <path d="M50 110 C35 150 25 200 45 235 C65 190 60 140 70 120 Z" fill="url(#purpleHair)"/>
+                <path d="M190 110 C205 150 215 200 195 235 C175 190 180 140 170 120 Z" fill="url(#purpleHair)"/>
+
+                <!-- Delicate Face Shape -->
+                <path d="M75 110 C75 165 120 190 120 190 C120 190 165 165 165 110 C165 75 120 70 120 70 C120 70 75 75 75 110 Z" fill="url(#softSkin)" stroke="#b026ff" stroke-width="1"/>
+
+                <!-- Animated Blinking Eyes Group -->
+                <g class="anime-eyes-group">
+                    <!-- Left Eye -->
+                    <ellipse cx="96" cy="120" rx="9" ry="13" fill="#0a021a" stroke="#b026ff" stroke-width="1.5"/>
+                    <ellipse cx="96" cy="120" rx="5" ry="8" fill="url(#vibrantEye)"/>
+                    <circle cx="93" cy="114" r="2.5" fill="#ffffff"/>
+                    <circle cx="98" cy="124" r="1.2" fill="#ffffff"/>
+                    <path d="M84 105 C92 98 102 102 106 106" stroke="#b026ff" stroke-width="2" stroke-linecap="round" fill="none"/>
+
+                    <!-- Right Eye -->
+                    <ellipse cx="144" cy="120" rx="9" ry="13" fill="#0a021a" stroke="#b026ff" stroke-width="1.5"/>
+                    <ellipse cx="144" cy="120" rx="5" ry="8" fill="url(#vibrantEye)"/>
+                    <circle cx="141" cy="114" r="2.5" fill="#ffffff"/>
+                    <circle cx="146" cy="124" r="1.2" fill="#ffffff"/>
+                    <path d="M134 106 C138 102 148 98 156 105" stroke="#b026ff" stroke-width="2" stroke-linecap="round" fill="none"/>
+                </g>
+
+                <!-- Cute Small Nose & Warm Big Smile -->
+                <circle cx="120" cy="136" r="1" fill="#b026ff"/>
+                <path d="M106 148 C112 162 128 162 134 148 C128 155 112 155 106 148 Z" fill="#ff4081" stroke="#b026ff" stroke-width="1"/>
+                <path d="M108 147 C114 153 126 153 132 147" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+
+                <!-- Front Bangs & Hair Strands -->
+                <path d="M72 95 C68 45 120 35 120 35 C120 35 172 45 168 95 C178 70 152 45 120 43 C88 45 62 70 72 95 Z" fill="url(#purpleHair)"/>
+                <path d="M75 90 C90 115 98 118 100 118 C96 92 86 82 75 90 Z" fill="url(#purpleHair)"/>
+                <path d="M165 90 C150 115 142 118 140 118 C144 92 154 82 165 90 Z" fill="url(#purpleHair)"/>
+                <path d="M100 80 C120 108 122 108 140 80 C120 65 120 65 100 80 Z" fill="#f06292" opacity="0.85"/>
+            </svg>
+        </div>
+
+        <div class="overlay-inputs-panel">
+            <div class="overlay-inputs-title">Active Aisthesis Modulation Inputs</div>
+            <div id="overlay-inputs-list"></div>
+        </div>
+
+        <div class="overlay-readout">
+            <div class="sync-label">INTERLINKED BASELINE RESULT</div>
+            <div class="overlay-percent" id="overlay-percent-val">0.0%</div>
+            <div class="sync-label" id="overlay-status-msg" style="color: var(--neon-purple); font-weight: bold;">SYNCHRONIZATION COMPLETE</div>
+        </div>
+    </div>
+
+    <div class="footer-decor">
+        <div>JOI INTERFACE MODEL #3732-NW — PROJECTION UNIT</div>
+        <div>"CELLS INTERLINKED WITHIN CELLS INTERLINKED"</div>
+    </div>
+
+    <script>
+        const sensesData = [
+            { id: 'vista', name: 'Optical / Thermal Vision', val: 85, active: true, userInput: '4K spectral calibration' },
+            { id: 'oido', name: 'Eco-Frequency Hearing', val: 70, active: true, userInput: 'Active noise filter' },
+            { id: 'tacto', name: 'Epidermal Touch / Bioreception', val: 95, active: true, userInput: 'High thermal sensitivity' },
+            { id: 'olfato', name: 'Olfactory Chemoreception', val: 40, active: false, userInput: '' },
+            { id: 'gusto', name: 'Chemical-Nutritional Taste', val: 30, active: false, userInput: '' },
+            { id: 'propiocepcion', name: 'Spatial Proprioception', val: 90, active: true, userInput: 'Stabilized 3D vectorial' },
+            { id: 'nocicepcion', name: 'Nociception (Pain Filter)', val: 15, active: true, userInput: 'Suppression threshold 85%' }
+        ];
+
+        const phylumData = [
+            { id: 'homeostasis', name: 'General Homeostasis', val: 94, unit: '%' },
+            { id: 'glucosa', name: 'Glucose Level (Norm 70-110)', val: 90, unit: 'mg/dL' },
+            { id: 'adrenalina', name: 'Adrenaline / Acute Stress', val: 20, unit: 'pg/mL' },
+            { id: 'dopamina', name: 'Dopamine (Motivation)', val: 85, unit: 'ng/mL' },
+            { id: 'serotonina', name: 'Serotonin (Stability)', val: 88, unit: 'ng/mL' },
+            { id: 'cortisol', name: 'Cortisol (Tension)', val: 15, unit: 'µg/dL' },
+            { id: 'oxitocina', name: 'Oxytocin (Empathy/Bond)', val: 80, unit: 'pg/mL' }
+        ];
+
+        function renderAisthesis() {
+            const container = document.getElementById('aisthesis-container');
+            container.innerHTML = sensesData.map(sense => `
+                <div class="sense-item ${sense.active ? 'active' : ''}" id="sense-${sense.id}">
+                    <div class="sense-header" onclick="toggleSense('${sense.id}')">
+                        <div class="sense-label">
+                            <div class="checkbox"></div>
+                            <span>${sense.name}</span>
+                        </div>
+                        <span class="intensity-val" id="text-${sense.id}">${sense.active ? '' : 'OFF'}</span>
+                    </div>
+                    <div class="controls">
+                        <div class="slider-container">
+                            <input type="range" min="0" max="100" value="${sense.val}" 
+                                oninput="updateAisthesisVal('${sense.id}', this.value)">
+                        </div>
+                        <span class="intensity-val" id="val-${sense.id}">${sense.val}%</span>
+                    </div>
+                    <div class="sense-input-container">
+                        <input type="text" class="sense-input" id="input-${sense.id}" 
+                            placeholder="Enter parameter / note..." 
+                            value="${sense.userInput}" 
+                            oninput="updateUserInput('${sense.id}', this.value)">
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderPhylum() {
+            const container = document.getElementById('phylum-container');
+            container.innerHTML = phylumData.map(item => `
+                <div class="phylum-item">
+                    <div class="phylum-info">
+                        <span class="phylum-name">${item.name}</span>
+                        <span class="phylum-value" id="phylum-val-${item.id}">${item.val} ${item.unit}</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" min="0" max="100" value="${item.val}" 
+                            oninput="updatePhylumVal('${item.id}', this.value)">
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleSense(id) {
+            const sense = sensesData.find(s => s.id === id);
+            sense.active = !sense.active;
+            
+            const item = document.getElementById(`sense-${id}`);
+            const text = document.getElementById(`text-${id}`);
+            const valSpan = document.getElementById(`val-${id}`);
+
+            item.classList.toggle('active', sense.active);
+            text.innerText = sense.active ? '' : 'OFF';
+            if(sense.active) valSpan.innerText = sense.val + '%';
+
+            calculateSync();
+        }
+
+        function updateAisthesisVal(id, value) {
+            const sense = sensesData.find(s => s.id === id);
+            sense.val = parseInt(value);
+            document.getElementById(`val-${id}`).innerText = value + '%';
+            calculateSync();
+        }
+
+        function updateUserInput(id, value) {
+            const sense = sensesData.find(s => s.id === id);
+            sense.userInput = value;
+        }
+
+        function updatePhylumVal(id, value) {
+            const item = phylumData.find(p => p.id === id);
+            item.val = parseInt(value);
+            document.getElementById(`phylum-val-${id}`).innerText = `${value} ${item.unit}`;
+            calculateSync();
+        }
+
+        let currentSync = 0;
+
+        function calculateSync() {
+            const activeSenses = sensesData.filter(s => s.active);
+            const aisthesisAvg = activeSenses.length > 0 
+                ? activeSenses.reduce((acc, curr) => acc + curr.val, 0) / activeSenses.length 
+                : 0;
+
+            const getPhylumVal = (id) => phylumData.find(p => p.id === id).val;
+
+            const homeostasis = getPhylumVal('homeostasis');
+            const positiveNeuro = (getPhylumVal('dopamina') + getPhylumVal('serotonina') + getPhylumVal('oxitocina')) / 3;
+            const stressFactor = (getPhylumVal('cortisol') + getPhylumVal('adrenalina')) / 2;
+
+            let rawSync = (homeostasis * 0.35) + (positiveNeuro * 0.35) + (aisthesisAvg * 0.20) + ((100 - stressFactor) * 0.10);
+            if(activeSenses.length === 0) rawSync *= 0.3;
+
+            currentSync = Math.min(Math.max(rawSync, 0), 100).toFixed(1);
+
+            document.getElementById('sync-val').innerText = `${currentSync}%`;
+            document.getElementById('overlay-percent-val').innerText = `${currentSync}%`;
+        }
+
+        function renderOverlayInputs() {
+            const container = document.getElementById('overlay-inputs-list');
+            const activeWithInput = sensesData.filter(s => s.active && s.userInput.trim() !== '');
+            
+            if(activeWithInput.length === 0) {
+                container.innerHTML = '<div style="color: var(--text-dim); font-size: 0.8rem; text-align: center; padding: 6px;">No active inputs registered.</div>';
+                return;
+            }
+
+            container.innerHTML = activeWithInput.map(sense => `
+                <div class="overlay-input-item">
+                    <span class="overlay-input-category">${sense.name}:</span>
+                    <span class="overlay-input-val">${sense.userInput}</span>
+                </div>
+            `).join('');
+        }
+
+        const canvas = document.getElementById('matrix-canvas');
+        const ctx = canvas.getContext('2d');
+        let matrixInterval = null;
+
+        function initMatrixRain() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const chars = 'x8X8x8X8x8X8X8x8x8x8x8X8x8X8x8X8µ§¶∆≡≈±';
+            const fontSize = 16;
+            const columns = Math.floor(canvas.width / fontSize);
+            const drops = Array(columns).fill(1);
+
+            function draw() {
+                ctx.fillStyle = 'rgba(2, 4, 10, 0.08)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.font = `${fontSize}px monospace`;
+
+                for (let i = 0; i < drops.length; i++) {
+                    const text = chars.charAt(Math.floor(Math.random() * chars.length));
+                    
+                    if(text === '8' || text === 'x') {
+                        ctx.fillStyle = '#f06292';
+                    } else {
+                        ctx.fillStyle = '#b026ff';
+                    }
+
+                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                        drops[i] = 0;
+                    }
+                    drops[i]++;
+                }
+            }
+
+            if(matrixInterval) clearInterval(matrixInterval);
+            matrixInterval = setInterval(draw, 33);
+        }
+
+        function openProjection() {
+            calculateSync();
+            renderOverlayInputs();
+            document.getElementById('projection-overlay').classList.add('active');
+            initMatrixRain();
+        }
+
+        function closeProjection() {
+            document.getElementById('projection-overlay').classList.remove('active');
+            if(matrixInterval) clearInterval(matrixInterval);
+        }
+
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const ms = String(Math.floor(now.getMilliseconds() / 10)).padStart(2, '0');
+            document.getElementById('timestamp').innerText = `${hours}:${minutes}:${seconds}.${ms}`;
+        }
+
+        window.addEventListener('resize', () => {
+            if(document.getElementById('projection-overlay').classList.contains('active')) {
+                initMatrixRain();
+            }
+        });
+
+        renderAisthesis();
+        renderPhylum();
+        calculateSync();
+        setInterval(updateClock, 50);
+    </script>
+</body>
+</html>
