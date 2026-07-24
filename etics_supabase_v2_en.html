@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+ <title>Symmétresis System & 32 Permutations Matrix</title>
+ <script src="https://cdn.tailwindcss.com"></script>
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+ <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+ <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+ <style>
+   :root {
+     --bg-base: #030508;
+     --hud-surface: rgba(6, 11, 22, 0.88);
+     --hud-border: rgba(79, 70, 229, 0.25);
+     --hud-glow: rgba(79, 70, 229, 0.15);
+     --indigo-bright: #6366f1;
+     --indigo-dim: #4338ca;
+     --indigo-glow: rgba(99, 102, 241, 0.4);
+     --text-main: #e0e7ff;
+     --text-muted: #64748b;
+     --text-subtle: #312e81;
+   }
+
+   body {
+     font-family: 'JetBrains Mono', monospace;
+     background-color: var(--bg-base);
+     color: var(--text-main);
+     overflow-x: hidden;
+     -webkit-tap-highlight-color: transparent;
+     background-image: 
+       radial-gradient(circle at 50% 50%, rgba(79, 70, 229, 0.04) 0%, transparent 80%),
+       linear-gradient(rgba(79, 70, 229, 0.015) 1px, transparent 1px),
+       linear-gradient(90deg, rgba(79, 70, 229, 0.015) 1px, transparent 1px);
+     background-size: 100% 100%, 24px 24px, 24px 24px;
+   }
+   .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+   /* Custom Glassmorphism - Indigo HUD Style */
+   .glass-panel {
+     background: var(--hud-surface);
+     backdrop-filter: blur(16px);
+     -webkit-backdrop-filter: blur(16px);
+     border: 1px solid var(--hud-border);
+     box-shadow: 0 0 30px var(--hud-glow);
+     position: relative;
+   }
+
+   .glass-card {
+     background: rgba(15, 23, 42, 0.75);
+     backdrop-filter: blur(10px);
+     -webkit-backdrop-filter: blur(10px);
+     border: 1px solid rgba(99, 102, 241, 0.12);
+   }
+
+   /* HUD angular brackets */
+   .corner-bracket {
+     position: absolute;
+     width: 12px;
+     height: 12px;
+     border-color: var(--indigo-bright);
+     border-style: solid;
+     pointer-events: none;
+     z-index: 10;
+   }
+   .cb-tl { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+   .cb-tr { top: -1px; right: -1px; border-width: 2px 2px 0 0; }
+   .cb-bl { bottom: -1px; left: -1px; border-width: 0 0 2px 2px; }
+   .cb-br { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+
+   /* ========================================== */
+   /* PLAQUE / SCI-FI HUD TERMINAL - CYAN NEON    */
+   /* ========================================== */
+   .golden-plaque-photoreal {
+     background:
+       repeating-linear-gradient(180deg, rgba(0, 229, 255, 0.025) 0px, rgba(0, 229, 255, 0.025) 1px, transparent 1px, transparent 3px),
+       linear-gradient(160deg, #010409 0%, #041022 25%, #061a33 50%, #041022 75%, #010409 100%),
+       radial-gradient(circle at 25% 15%, rgba(0, 224, 255, 0.14) 0%, transparent 55%),
+       radial-gradient(circle at 80% 85%, rgba(34, 211, 238, 0.1) 0%, transparent 55%);
+     border: 2px solid #22d3ee;
+     border-image: none;
+     box-shadow:
+       0 0 0 1px rgba(34, 211, 238, 0.25),
+       0 25px 70px rgba(0, 0, 0, 0.95),
+       inset 0 0 50px rgba(0, 0, 0, 0.85),
+       inset 0 0 24px rgba(34, 211, 238, 0.1),
+       0 0 18px rgba(34, 211, 238, 0.55),
+       0 0 46px rgba(34, 211, 238, 0.3);
+     position: relative;
+   }
+
+   .golden-plaque-photoreal::before,
+   .golden-plaque-photoreal::after {
+     content: '';
+     position: absolute;
+     width: 10px;
+     height: 10px;
+     border-radius: 2px;
+     background: #22d3ee;
+     box-shadow: 0 0 8px 2px rgba(34, 211, 238, 0.9), 0 0 20px rgba(34, 211, 238, 0.5);
+     z-index: 10;
+   }
+   .golden-plaque-photoreal::before { top: 14px; left: 14px; }
+   .golden-plaque-photoreal::after { top: 14px; right: 14px; }
+
+   .engraved-text-primary {
+     color: #a5f3fc;
+     text-shadow: 0 0 6px rgba(34, 211, 238, 0.85), 0 0 18px rgba(34, 211, 238, 0.45);
+     letter-spacing: 0.06em;
+   }
+
+   .engraved-text-secondary {
+     color: #67e8f9;
+     text-shadow: 0 0 4px rgba(34, 211, 238, 0.5);
+   }
+
+   .engraved-box {
+     background: linear-gradient(145deg, rgba(3, 14, 28, 0.92), rgba(1, 8, 18, 0.95));
+     border: 1px solid rgba(34, 211, 238, 0.35);
+     box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.9), 0 0 10px rgba(34, 211, 238, 0.12);
+   }
+
+   /* ========================================== */
+   /* FLOATING GLOW TEXT GROUPS (SCREEN 3) */
+   /* ========================================== */
+   .golden-plaque-photoreal { perspective: 900px; }
+
+   .aff-hud-item-text,
+   .aff-hud-item-box {
+     transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), filter 0.4s ease, box-shadow 0.4s ease;
+     transform: translateZ(0);
+     cursor: default;
+   }
+
+   .aff-hud-item-text:hover,
+   .aff-hud-item-text.aff-touch-glow {
+     transform: translateY(-3px) translateZ(8px);
+     filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.85)) drop-shadow(0 0 20px rgba(34, 211, 238, 0.45));
+   }
+
+   .aff-hud-item-box:hover,
+   .aff-hud-item-box.aff-touch-glow {
+     transform: translateY(-3px) translateZ(8px);
+     box-shadow: 0 10px 26px rgba(0, 0, 0, 0.65), 0 0 20px rgba(34, 211, 238, 0.6), inset 0 0 20px rgba(34, 211, 238, 0.18);
+   }
+
+   .glow-amber { box-shadow: 0 0 25px rgba(79, 70, 229, 0.25); }
+
+   .custom-scrollbar::-webkit-scrollbar {
+     width: 4px;
+     height: 4px;
+   }
+   .custom-scrollbar::-webkit-scrollbar-track {
+     background: rgba(15, 23, 42, 0.6);
+   }
+   .custom-scrollbar::-webkit-scrollbar-thumb {
+     background: rgba(99, 102, 241, 0.5);
+     border-radius: 4px;
+   }
+
+   input[type=range] { accent-color: #6366f1; }
+
+   .screen {
+     transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+   }
+   .screen-hidden {
+     opacity: 0;
+     pointer-events: none;
+     transform: scale(0.97);
+     position: absolute;
+     top: 0; left: 0; right: 0; bottom: 0;
+     z-index: -10;
+   }
+
+   #matrix-canvas {
+     position: fixed;
+     top: 0;
+     left: 0;
+     width: 100vw;
+     height: 100vh;
+     z-index: 0;
+     pointer-events: none;
+     opacity: 0.25;
+   }
+
+   /* HUD style select dropdown */
+   .hud-select {
+     background: rgba(15, 23, 42, 0.9);
+     border: 1px solid rgba(99, 102, 241, 0.3);
+     color: #e0e7ff;
+     font-family: 'JetBrains Mono', monospace;
+     font-size: 12px;
+     padding: 10px 14px;
+     border-radius: 8px;
+     width: 100%;
+     outline: none;
+     cursor: pointer;
+     transition: all 0.2s ease;
+     appearance: none;
+     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+     background-repeat: no-repeat;
+     background-position: right 12px center;
+   }
+   .hud-select:focus {
+     border-color: #6366f1;
+     box-shadow: 0 0 12px rgba(99, 102, 241, 0.2);
+   }
+   .hud-select option {
+     background: #0f172a;
+     color: #e0e7ff;
+     font-family: 'JetBrains Mono', monospace;
+   }
+ </style>
+</head>
+<body class="min-h-[100dvh] relative selection:bg-indigo-500 selection:text-white">
+
+<canvas id="matrix-canvas"></canvas>
+<div id="records-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+  <div class="glass-panel max-w-2xl w-full rounded-2xl p-6 border border-indigo-500/40 glow-amber flex flex-col max-h-[85vh]">
+    <div class="corner-bracket cb-tl"></div><div class="corner-bracket cb-tr"></div>
+    <div class="corner-bracket cb-bl"></div><div class="corner-bracket cb-br"></div>
+    <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
+      <div>
+        <span class="text-[10px] font-mono text-indigo-400 uppercase tracking-widest">Supabase Database • Accumulated Records</span>
+        <h3 class="text-lg font-bold text-white font-mono">Records Menu by ID</h3>
+      </div>
+      <button id="close-modal-btn" type="button" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+    </div>
+    <div class="mb-4 flex gap-2">
+      <input type="text" id="filter-id-input" placeholder="Filter by record ID..." class="w-full bg-slate-950/80 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-indigo-500">
+      <button id="btn-clear-db" type="button" class="px-3 py-2 bg-rose-950/60 hover:bg-rose-900 border border-rose-500/40 text-rose-300 text-xs font-mono rounded-lg transition whitespace-nowrap">Clear DB</button>
+    </div>
+    <div class="overflow-y-auto flex-grow custom-scrollbar pr-1">
+      <table class="w-full text-left text-xs font-mono">
+        <thead class="bg-slate-900 text-slate-400 uppercase text-[10px] sticky top-0 border-b border-slate-800 z-10">
+          <tr>
+            <th class="py-2 px-2">ID / Name</th>
+            <th class="py-2 px-2">Act</th>
+            <th class="py-2 px-1">Perm Code</th>
+            <th class="py-2 px-1">Scope</th>
+            <th class="py-2 px-2">Date</th>
+          </tr>
+        </thead>
+        <tbody id="supabase-records-tbody" class="divide-y divide-slate-800/60"></tbody>
+      </table>
+    </div>
+    <div class="mt-4 pt-3 border-t border-slate-800 text-[10px] font-mono text-slate-400 flex justify-between items-center">
+      <span id="supabase-status">Supabase Status: Connected and Synced</span>
+      <span id="supabase-count">Total registros: 0</span>
+    </div>
+  </div>
+</div>
+
+<section id="screen-calc" class="screen min-h-[100dvh] p-3 sm:p-6 md:p-8 flex flex-col justify-center items-center relative z-10">
+  <div class="max-w-4xl w-full glass-panel rounded-2xl p-4 sm:p-6 md:p-10 glow-amber relative overflow-hidden my-auto">
+    <div class="corner-bracket cb-tl"></div><div class="corner-bracket cb-tr"></div>
+    <div class="corner-bracket cb-bl"></div><div class="corner-bracket cb-br"></div>
+
+    <div class="absolute -top-24 -left-24 w-40 h-40 md:w-60 md:h-60 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -bottom-24 -right-24 w-40 h-40 md:w-60 md:h-60 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="border-b border-slate-800 pb-4 mb-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      <div>
+        <span class="text-[10px] sm:text-xs font-mono tracking-widest text-indigo-400 uppercase">Axiological Module • Dual Decimal Layer</span>
+        <h1 class="text-xl sm:text-2xl md:text-3xl font-extrabold text-white tracking-tight mt-0.5 font-mono">Heuristic Ethical Calculation</h1>
+      </div>
+      <button id="btn-open-records" type="button" class="px-3 py-1.5 rounded-full bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-500/40 text-indigo-300 text-[10px] sm:text-xs font-mono transition glow-amber cursor-pointer flex items-center gap-1.5 active:scale-95">
+        <span>32 Nested Permutations</span>
+        <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+      </button>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
+      <div class="lg:col-span-7 space-y-4">
+        <div class="glass-card p-3.5 sm:p-4 rounded-xl border-l-4 border-l-indigo-500 space-y-3.5">
+          <div>
+            <label class="text-[11px] sm:text-xs font-mono uppercase tracking-wider text-indigo-400 block mb-1.5">ID / Record Identifier</label>
+            <input type="text" id="input-record-id" value="" placeholder="E.g.: Oscar, Alpha_Node..." class="w-full bg-slate-950/80 border border-slate-700/80 rounded-lg px-3 py-2.5 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-medium transition font-mono">
+            <p class="text-[10px] sm:text-[11px] text-slate-400 mt-1">Unique identifier to accumulate in the Supabase database.</p>
+          </div>
+
+          <div class="pt-3 border-t border-slate-800/60">
+            <label class="text-[11px] sm:text-xs font-mono uppercase tracking-wider text-indigo-400 block mb-1.5">Act / Decision to Evaluate</label>
+            <input type="text" id="input-act" value="Kinetic Stimulus Consumption" placeholder="E.g.: Drinking alcohol, Studying 4 hours..." class="w-full bg-slate-950/80 border border-slate-700/80 rounded-lg px-3 py-2.5 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-medium transition font-mono">
+            <p class="text-[10px] sm:text-[11px] text-slate-400 mt-1">Defines the action that will map the temporal nested tree.</p>
+          </div>
+
+          <!-- NEW: which sense is stimulated -->
+          <div class="pt-3 border-t border-slate-800/60">
+            <label class="text-[11px] sm:text-xs font-mono uppercase tracking-wider text-indigo-400 block mb-1.5">Which sense is stimulated (Aisthesis)</label>
+            <select id="input-sense" class="hud-select">
+              <option value="visual">Visual (Optic)</option>
+              <option value="auditivo">Auditory (Sonic)</option>
+              <option value="tactil">Tactile (Haptic)</option>
+              <option value="gustativo">Gustatory (Chemical)</option>
+              <option value="olfativo">Olfactory (Osmic)</option>
+              <option value="cinestesico">Kinesthetic (Kinetic)</option>
+              <option value="propioceptivo">Proprioceptive (Somatic)</option>
+              <option value="interoceptivo">Interoceptive (Visceral)</option>
+              <option value="equilibrio">Balance (Vestibular)</option>
+              <option value="termico">Thermal (Caloric)</option>
+              <option value="doloroso">Painful (Nociceptive)</option>
+              <option value="cronognosico">Chronognostic (Temporal)</option>
+            </select>
+            <p class="text-[10px] sm:text-[11px] text-slate-400 mt-1">Sensory modality activated by the act according to the aisthesis taxonomy.</p>
+          </div>
+
+          <div class="mt-3.5 pt-3.5 border-t border-slate-800/60">
+            <label class="text-[11px] sm:text-xs font-mono uppercase tracking-wider text-indigo-400 block mb-1.5">Scope of the Act</label>
+            <div class="grid grid-cols-2 gap-2 text-xs font-medium">
+              <button type="button" data-scope="individual" class="btn-scope active py-2.5 px-3 rounded-lg border border-indigo-500 bg-indigo-950/40 text-indigo-300 transition active:scale-95 font-mono">Individual</button>
+              <button type="button" data-scope="alteridad" class="btn-scope py-2.5 px-3 rounded-lg border border-slate-700 bg-slate-800/40 text-slate-300 hover:border-indigo-500 transition active:scale-95 font-mono">Otherness</button>
+            </div>
+            <p class="text-[10px] sm:text-[11px] text-slate-400 mt-1.5">Determines whether the resulting affect is read in an individual or social key.</p>
+          </div>
+        </div>
+
+        <div class="glass-card p-3.5 sm:p-4 rounded-xl">
+          <label class="text-xs sm:text-sm font-semibold text-slate-200 block mb-2 font-mono">Layer 1: Base Intention (I)</label>
+          <div class="grid grid-cols-2 gap-2 text-xs font-medium">
+            <button type="button" data-intention="I_B" class="btn-intention active py-2.5 px-3 rounded-lg border border-indigo-500 bg-indigo-950/40 text-indigo-300 transition active:scale-95 font-mono">Good (I_B)</button>
+            <button type="button" data-intention="I_D" class="btn-intention py-2.5 px-3 rounded-lg border border-slate-700 bg-slate-800/40 text-slate-300 hover:border-indigo-500 transition active:scale-95 font-mono">Harmful (I_D)</button>
+          </div>
+        </div>
+
+        <div class="glass-card p-3.5 sm:p-4 rounded-xl space-y-2.5">
+          <div class="flex justify-between items-center">
+            <label class="text-xs sm:text-sm font-semibold text-slate-200 font-mono">Layer 2: Temporal Result (R)</label>
+            <span id="val-r" class="text-cyan-400 font-mono font-bold text-base sm:text-lg">+6.0</span>
+          </div>
+          <input type="range" id="input-r" min="-10" max="10" step="0.5" value="6" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center text-[10px] sm:text-[11px] text-slate-400 gap-1">
+            <span id="label-r-type" class="text-cyan-300 font-mono">Greater Pleasure (P2)</span>
+            <span class="text-slate-500 font-mono">Threshold: ±1.0 to ±5.0 (Minor) | ±5.1 to ±10.0 (Major)</span>
+          </div>
+        </div>
+
+        <div class="glass-card p-3.5 sm:p-4 rounded-xl space-y-2.5">
+          <div class="flex justify-between items-center">
+            <label class="text-xs sm:text-sm font-semibold text-slate-200 font-mono">Layer 2: Prolonged Effect (E)</label>
+            <span id="val-e" class="text-emerald-400 font-mono font-bold text-base sm:text-lg">+7.0</span>
+          </div>
+          <input type="range" id="input-e" min="-10" max="10" step="0.5" value="7" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center text-[10px] sm:text-[11px] text-slate-400 gap-1">
+            <span id="label-e-type" class="text-emerald-300 font-mono">Greater Pleasure (P2)</span>
+            <span class="text-slate-500 font-mono">M = 0.45R + 0.55E + 0.05(R×E)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="lg:col-span-5 flex flex-col justify-between glass-card p-4 sm:p-6 rounded-xl border border-indigo-500/30">
+        <div>
+          <div class="border-b border-slate-800 pb-2 mb-3.5">
+            <span class="text-[9px] sm:text-[10px] font-mono uppercase tracking-widest text-slate-400">Nested Tree Evaluation</span>
+            <h3 id="display-act-name" class="text-xs sm:text-sm font-bold text-indigo-300 truncate mt-0.5 font-mono">Kinetic Stimulus Consumption</h3>
+          </div>
+          <div class="space-y-3">
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-slate-400 font-mono">Base Intention (I):</span>
+              <span id="res-i" class="font-mono font-bold text-indigo-300">I_B</span>
+            </div>
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-slate-400 font-mono">Nested Result (R):</span>
+              <span id="res-r" class="font-mono font-bold text-cyan-300">+6.0 (P2)</span>
+            </div>
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-slate-400 font-mono">Nested Effect (E):</span>
+              <span id="res-e" class="font-mono font-bold text-emerald-300">+7.0 (P2)</span>
+            </div>
+            <div class="flex justify-between items-center text-xs border-t border-slate-800 pt-2">
+              <span class="text-slate-200 font-bold font-mono">Total Moral Balance (M):</span>
+              <span id="res-m" class="font-mono font-bold text-emerald-400 text-sm sm:text-base">+13.0</span>
+            </div>
+          </div>
+          <div class="mt-4 p-3 rounded-lg bg-slate-950/80 border border-slate-800">
+            <span class="text-[9px] sm:text-[10px] font-mono uppercase tracking-widest text-indigo-400 block mb-1">Nested Permutation Status</span>
+            <p id="diag-text" class="text-[11px] sm:text-xs font-medium text-slate-300 leading-relaxed font-mono">Calculating state matrix...</p>
+          </div>
+        </div>
+        <button id="btn-to-3d" type="button" class="w-full mt-5 py-3 px-4 bg-gradient-to-r from-indigo-500 via-indigo-400 to-cyan-500 hover:from-indigo-400 hover:to-cyan-400 text-slate-950 font-extrabold rounded-xl shadow-lg transition transform active:scale-95 flex items-center justify-center gap-2 group text-xs sm:text-sm font-mono">
+          <span>View 3D 32-Permutation Matrix</span>
+          <svg class="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+<section id="screen-3d" class="screen screen-hidden min-h-[100dvh] relative flex flex-col justify-between p-2.5 sm:p-4 md:p-6 z-10">
+  <div class="relative z-20 flex flex-wrap justify-between items-center glass-panel p-3 rounded-xl max-w-7xl mx-auto w-full gap-2.5">
+    <div class="corner-bracket cb-tl"></div><div class="corner-bracket cb-tr"></div>
+    <div class="corner-bracket cb-bl"></div><div class="corner-bracket cb-br"></div>
+    <div class="flex items-center gap-2.5">
+      <button id="btn-to-calc" type="button" class="px-2.5 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-200 text-[11px] sm:text-xs font-mono border border-slate-700 transition flex items-center gap-1.5 active:scale-95">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+        <span>Back</span>
+      </button>
+      <div>
+        <span class="text-[9px] font-mono text-indigo-400 uppercase tracking-widest block">Evaluable Act</span>
+        <h2 id="hud-act-title" class="text-xs font-bold text-white font-mono truncate max-w-[150px] sm:max-w-xs">Kinetic Stimulus Consumption</h2>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button id="hud-perm-code" type="button" title="Click to open Affective Law Decree" class="px-3 py-1.5 rounded-lg bg-indigo-950/80 hover:bg-indigo-900/80 border border-indigo-500/60 text-indigo-300 font-mono text-[11px] sm:text-xs font-bold transition transform active:scale-95 flex items-center gap-1.5 glow-amber cursor-pointer">
+        <span>[ 06 • I_B • P2 • P2 ]</span>
+        <svg class="w-3 h-3 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+      </button>
+    </div>
+  </div>
+  <div class="relative z-20 grid grid-cols-1 lg:grid-cols-12 gap-3 max-w-7xl mx-auto w-full my-auto py-2">
+    <div class="lg:col-span-7 flex flex-col gap-2.5">
+      <div id="canvas-container" class="w-full h-[320px] sm:h-[380px] md:h-[440px] glass-panel rounded-xl relative overflow-hidden border border-slate-800">
+        <div class="absolute top-2.5 left-2.5 z-10 glass-card p-2.5 rounded-lg text-[10px] sm:text-[11px] font-mono border border-slate-800 space-y-1">
+          <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-indigo-400"></span><span class="text-slate-400">Intention:</span><span id="hud-v-i" class="text-indigo-300 font-bold">I_B</span></div>
+          <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-cyan-400"></span><span class="text-slate-400">Result:</span><span id="hud-v-r" class="text-cyan-300 font-bold">+6.0</span></div>
+          <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-400"></span><span class="text-slate-400">Effect:</span><span id="hud-v-e" class="text-emerald-300 font-bold">+7.0</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="lg:col-span-5 glass-panel p-3.5 sm:p-4 rounded-xl flex flex-col justify-between border border-indigo-500/20 max-h-[380px] sm:max-h-[440px]">
+      <div>
+        <div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-2.5">
+          <div>
+            <h3 class="text-xs font-mono font-bold text-indigo-400 uppercase tracking-wider">Matrix of the 32 Permutations</h3>
+            <p class="text-[9px] sm:text-[10px] text-slate-400">The active state glows in indigo.</p>
+          </div>
+          <span class="text-[9px] sm:text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">32 States</span>
+        </div>
+        <div class="overflow-y-auto max-h-[300px] sm:max-h-[340px] custom-scrollbar pr-1">
+          <table class="w-full text-left text-[10px] sm:text-[11px] font-mono">
+            <thead class="bg-slate-900/90 text-slate-400 text-[9px] sm:text-[10px] uppercase sticky top-0 border-b border-slate-800 z-10">
+              <tr><th class="py-1.5 px-1.5">Code</th><th class="py-1.5 px-1">I</th><th class="py-1.5 px-1">R</th><th class="py-1.5 px-1">E</th><th class="py-1.5 px-2">Name</th></tr>
+            </thead>
+            <tbody id="permutations-table-body" class="divide-y divide-slate-800/60"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="relative z-20 glass-panel p-2.5 sm:p-3 rounded-xl max-w-7xl mx-auto w-full text-center text-[10px] sm:text-[11px] font-mono text-slate-400 flex flex-wrap justify-between items-center gap-2">
+    <div>3D Controls: <span class="text-slate-200">Drag / Pinch</span></div>
+    <div class="flex items-center gap-2.5">
+      <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-indigo-400"></span> Intention</span>
+      <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-cyan-400"></span> Result</span>
+      <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> Effect</span>
+    </div>
+  </div>
+</section>
+
+<section id="screen-affective" class="screen screen-hidden min-h-[100dvh] relative flex flex-col justify-between p-3 sm:p-6 md:p-8 z-10">
+  <div class="relative z-20 flex justify-between items-center glass-panel p-3 sm:p-4 rounded-xl max-w-4xl mx-auto w-full">
+    <div class="corner-bracket cb-tl"></div><div class="corner-bracket cb-tr"></div>
+    <div class="corner-bracket cb-bl"></div><div class="corner-bracket cb-br"></div>
+    <button id="btn-to-3d-from-aff" type="button" class="px-3 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-200 text-xs font-mono border border-slate-700 transition flex items-center gap-1.5 active:scale-95">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+      <span>Back to 3D</span>
+    </button>
+    <div class="text-right">
+      <span class="text-[9px] sm:text-[10px] font-mono text-indigo-400 uppercase tracking-widest block">Chapter III • Official Record</span>
+      <h2 class="text-xs sm:text-sm font-bold text-white font-mono">Monolith of Affective Law</h2>
+    </div>
+  </div>
+  <div class="max-w-4xl w-full mx-auto my-auto golden-plaque-photoreal rounded-xl p-6 sm:p-10 md:p-12 relative z-20 space-y-6">
+    <div class="border-b border-indigo-600/30 pb-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      <div class="space-y-1.5 aff-hud-item-text">
+        <span class="text-[10px] sm:text-xs font-mono uppercase tracking-widest text-indigo-500 font-bold">Active Permutation Decree</span>
+        <div id="aff-formula-header" class="text-xs sm:text-sm md:text-base font-mono font-extrabold engraved-text-primary tracking-wider">[ Permutation 06 • I_B • (Result) P2 • (Effect) P2 ]</div>
+      </div>
+      <div id="aff-saldo-badge" class="px-4 py-1.5 rounded bg-indigo-950/90 border border-indigo-500/60 text-indigo-300 font-mono text-xs font-bold shadow-md aff-hud-item-box">M = +13.0</div>
+    </div>
+    <div><h3 id="aff-title" class="text-2xl sm:text-3xl md:text-4xl font-black engraved-text-primary tracking-tight font-sans uppercase aff-hud-item-text">Symphony of Full Conatus</h3></div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+      <div class="engraved-box p-4 sm:p-5 rounded-lg space-y-2 border-l-4 border-l-indigo-600 aff-hud-item-box">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-indigo-400 block font-bold">Phenomenology of Conatus</span>
+        <p id="aff-desc" class="text-xs sm:text-sm engraved-text-secondary leading-relaxed font-semibold">Virtuous intention, massive immediate success, and consolidation of vital power.</p>
+      </div>
+      <div class="engraved-box p-4 sm:p-5 rounded-lg space-y-2 border-l-4 border-l-indigo-500 aff-hud-item-box">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-indigo-400 block font-bold">Bodily and Operative Resonance</span>
+        <p id="aff-resonance" class="text-xs sm:text-sm engraved-text-secondary leading-relaxed font-semibold">Experience of lucid sovereignty. Simultaneous expansion of understanding and the power to act, free of residual friction.</p>
+      </div>
+    </div>
+    <div class="p-4 rounded-lg bg-black/40 border border-indigo-600/40 flex flex-col sm:flex-row justify-between items-start sm:items-center text-xs font-mono gap-2 shadow-inner aff-hud-item-box">
+      <span class="text-indigo-400/90 font-medium">Dominant Affective Direction:</span>
+      <span id="aff-direction" class="font-bold text-emerald-400 px-3 py-1 rounded bg-emerald-950/80 border border-emerald-500/40 shadow">EXPANSIVE JOY (Laetitia)</span>
+    </div>
+    <div class="p-4 sm:p-5 rounded-lg bg-black/40 border border-indigo-600/40 flex flex-col items-center gap-3 shadow-inner">
+      <span class="text-[10px] sm:text-[11px] font-mono uppercase tracking-widest text-indigo-400/95 flex items-center gap-1.5 aff-hud-item-text">
+        <span>Compass of Affect (Click to Redirect if Positive)</span>
+        <svg class="w-3.5 h-3.5 text-indigo-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+      </span>
+      <div id="compass-wrapper" class="relative w-40 h-40 sm:w-48 sm:h-48 cursor-pointer group" title="Click the compass to access joy.html (Requires positive output)">
+        <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-lg transition-transform group-hover:scale-105">
+          <circle cx="100" cy="100" r="94" fill="rgba(10,15,26,0.65)" stroke="#4f46e5" stroke-width="3"></circle>
+          <circle cx="100" cy="100" r="94" fill="none" stroke="#6366f1" stroke-width="1" stroke-dasharray="2 6" opacity="0.5"></circle>
+          <g stroke="#4338ca" stroke-width="1.5" opacity="0.7">
+            <line x1="100" y1="10" x2="100" y2="24"></line>
+            <line x1="100" y1="176" x2="100" y2="190"></line>
+            <line x1="10" y1="100" x2="24" y2="100"></line>
+            <line x1="176" y1="100" x2="190" y2="100"></line>
+          </g>
+          <g id="compass-needle" style="transform-origin: 100px 100px; transition: transform 1.7s cubic-bezier(0.22, 1, 0.36, 1);">
+            <polygon points="100,18 107,100 100,116 93,100" fill="#6366f1"></polygon>
+            <polygon points="100,182 107,100 100,84 93,100" fill="#475569"></polygon>
+          </g>
+          <circle cx="100" cy="100" r="9" fill="#1e1b4b" stroke="#6366f1" stroke-width="2"></circle>
+        </svg>
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <span id="compass-affect-text" class="text-[10px] sm:text-[11px] font-mono font-extrabold tracking-wide px-2 py-1 rounded bg-slate-950/80 border border-slate-700 text-slate-300 opacity-0 transition-opacity duration-500 text-center leading-tight">—</span>
+        </div>
+      </div>
+      <p id="compass-feedback-hint" class="text-[10px] font-mono text-slate-400 italic text-center aff-hud-item-text">Only redirects to joy.html if the result is joy, delight, or happiness.</p>
+    </div>
+  </div>
+  <div class="max-w-4xl mx-auto w-full text-center text-[10px] sm:text-[11px] font-mono text-slate-500 relative z-20">Symmétresis Constitutional Code • Supabase Cloud Persistence Active</div>
+</section>
+<script>
+  // --- SUPABASE CONFIGURATION (EN MODULE) ---
+  const SUPABASE_URL = 'https://lakyqsieafcwoetyvxgd.supabase.co/rest/v1/';
+  const SUPABASE_KEY = 'sb_publishable_EkrRy2F39M3FXaDAq8NlFg_3lIPMyFS';
+  // Same table as the Spanish module — language is resolved via column suffixes ("_en"),
+  // not via a separate table. See end.txt pattern.
+  const TABLE_NAME = 'registros';
+  const LANG_SUFFIX = '_en';
+
+  function getSupabaseHeaders() {
+    return {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation'
+    };
+  }
+
+  // --- SUPABASE CLIENT (reads/writes the acto_en / ambito_en / permutacion_en columns) ---
+  const SupabaseDB = {
+    async query(filterId = "") {
+      try {
+        // Select shared columns + English columns aliased back to plain names for rendering,
+        // and only bring rows that actually have English content (acto_en not null).
+        const selectCols = 'id,nombre,created_at,acto:acto_en,ambito:ambito_en,permutacion:permutacion_en';
+        let url = `${SUPABASE_URL}${TABLE_NAME}?select=${selectCols}&acto_en=not.is.null&order=created_at.desc`;
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: getSupabaseHeaders()
+        });
+        if (!response.ok) {
+          console.error('Supabase fetch error:', await response.json());
+          return [];
+        }
+        const data = await response.json();
+        if (!filterId.trim()) return data;
+        return data.filter(item => (item.nombre || '').toLowerCase().includes(filterId.toLowerCase()));
+      } catch (e) {
+        console.error('Error fetching from Supabase:', e);
+        return [];
+      }
+    },
+
+    async insert(record) {
+      try {
+        const payload = {
+          nombre: record.id || "Anonymous",
+          acto_en: record.act || "Unnamed action",
+          ambito_en: record.scope || "individual",
+          permutacion_en: record.permCode || "01"
+          // 'acto', 'ambito' and 'permutacion' (Spanish columns) are left NULL automatically
+        };
+        const response = await fetch(`${SUPABASE_URL}${TABLE_NAME}`, {
+          method: 'POST',
+          headers: getSupabaseHeaders(),
+          body: JSON.stringify(payload)
+        });
+        if (!response.ok) {
+          console.error('Supabase insert error:', await response.json());
+          return false;
+        }
+        return true;
+      } catch (e) {
+        console.error('Error inserting to Supabase:', e);
+        return false;
+      }
+    },
+
+    async clear() {
+      try {
+        // Only clears rows belonging to the English module (acto_en not null),
+        // so Spanish records in the same shared table are never touched.
+        const response = await fetch(`${SUPABASE_URL}${TABLE_NAME}?acto_en=not.is.null`, {
+          method: 'DELETE',
+          headers: getSupabaseHeaders()
+        });
+        if (!response.ok) {
+          console.error('Supabase delete error:', await response.json());
+          return false;
+        }
+        return true;
+      } catch (e) {
+        console.error('Error clearing Supabase:', e);
+        return false;
+      }
+    }
+  };
+
+  // --- 32 NESTED PERMUTATIONS DATABASE ---
+  const PERMUTATIONS_32_DB = [
+    { id: "01", I: "I_B", R: "P1", E: "P1", name: "Minor Stability Coherence", desc: "Good intention with moderate positive gratification and sustainment.", resonance: "Sense of operative lightness. Peaceful attunement with the immediate environment.", direction: "STABLE JOY" },
+    { id: "02", I: "I_B", R: "P1", E: "P2", name: "Growing Expansion of Wellbeing", desc: "Begins with subtle relief and matures into a great positive fulfillment.", resonance: "Progressive accumulation of confidence and optimization of vital energy.", direction: "PROGRESSIVE EXPANSION" },
+    { id: "03", I: "I_B", R: "P1", E: "D1", name: "Mild Subsequent Friction", desc: "Moderate good start followed by a small wear-and-tear cost.", resonance: "Mild operative resistance requiring a subtle calibration of effort.", direction: "MODERATE TENSION" },
+    { id: "04", I: "I_B", R: "P1", E: "D2", name: "Unnoticed Deterioration", desc: "Harmless initial pleasure that leads to a systemic collapse.", resonance: "Tragic subtlety; initial comfort masks a deep structural fatigue.", direction: "HIDDEN CONTRACTION" },
+    { id: "05", I: "I_B", R: "P2", E: "P1", name: "Decadent Apogee", desc: "Great initial fulfillment that stabilizes into a minor performance.", resonance: "Fleeting effervescence descending into a plateau of peaceful inertia.", direction: "STABLE DECLINE" },
+    { id: "06", I: "I_B", R: "P2", E: "P2", name: "Symphony of Full Conatus", desc: "Virtuous intention, massive immediate success, and consolidation of vital power.", resonance: "Experience of lucid sovereignty. Simultaneous expansion of understanding and the power to act.", direction: "EXPANSIVE JOY (Laetitia)" },
+    { id: "07", I: "I_B", R: "P2", E: "D1", name: "Moderate Cost of Success", desc: "Great achievement carrying a small toll of inevitable wear.", resonance: "Full satisfaction tinged by a necessary and accepted operative toll.", direction: "CONDITIONED SUCCESS" },
+    { id: "08", I: "I_B", R: "P2", E: "D2", name: "Hubris and Collapse", desc: "Excess of kinetic stimulus that breaks long-term stability.", resonance: "Passionate overflow; the magnitude of the initial pleasure breaks the organism's limits.", direction: "COLLAPSE FROM EXCESS" },
+    { id: "09", I: "I_B", R: "D1", E: "P1", name: "Constructive Asceticism", desc: "Initial minor effort or pain that yields stable wellbeing.", resonance: "Lucid discipline; initial fatigue gives way to lasting operative clarity.", direction: "LUCID ASCETICISM" },
+    { id: "10", I: "I_B", R: "D1", E: "P2", name: "High-Potency Sacrifice", desc: "Voluntary endurance of mild friction to release a great vital expansion.", resonance: "Transcendence of the resistance threshold toward a higher mastery.", direction: "RESTORED POWER" },
+    { id: "11", I: "I_B", R: "D1", E: "D1", name: "Valley of Resistance", desc: "Cycle of continuous effort with balanced costs and returns.", resonance: "Operative tenacity. Sustaining willpower against constant friction.", direction: "TENSIVE BALANCE" },
+    { id: "12", I: "I_B", R: "D1", E: "D2", name: "Failed Investment", desc: "Well-intentioned initial effort that leads to deep degradation.", resonance: "Progressive wear; good will collides with insurmountable resistance.", direction: "OPERATIVE DEGRADATION" },
+    { id: "13", I: "I_B", R: "D2", E: "P1", name: "Delayed Redemption", desc: "Severe initial collapse miraculously offset by later stability.", resonance: "Overcoming trauma; critical pain is processed and transformed into peace.", direction: "DELAYED RECOVERY" },
+    { id: "14", I: "I_B", R: "D2", E: "P2", name: "Heroic Overcoming of Trauma", desc: "Critical pain overcome through monumental transformation and triumph.", resonance: "Radical metamorphosis of the subject after crossing the threshold of severe suffering.", direction: "TRANSCENDENTAL TRIUMPH" },
+    { id: "15", I: "I_B", R: "D2", E: "D1", name: "Damage Containment", desc: "Immediate severe blow partially cushioned in effect.", resonance: "Defensive resilience; minimizing losses in an adverse scenario.", direction: "TECHNICAL CONTAINMENT" },
+    { id: "16", I: "I_B", R: "D2", E: "D2", name: "Involuntary Tragedy", desc: "Good intention trapped in a catastrophe from start to finish.", resonance: "Systemic helplessness; ethical rigor collides with an inevitable structural collapse.", direction: "ONTOLOGICAL TRAGEDY" },
+    { id: "17", I: "I_D", R: "P1", E: "P1", name: "Harmless Sterile Hedonism", desc: "Bad intention with meager fruits but no serious consequences.", resonance: "Empty indulgence; trivial satisfaction that does not significantly alter the conatus.", direction: "TRIVIAL INERTIA" },
+    { id: "18", I: "I_D", R: "P1", E: "P2", name: "Malicious Luck", desc: "Harmful impulse that happens to stumble into a great final benefit.", resonance: "Favorable paradox; undeserved gain obtained through pure external contingency.", direction: "ANOMALOUS FORTUNE" },
+    { id: "19", I: "I_D", R: "P1", E: "D1", name: "Passing Trap", desc: "Initial kinetic pleasure that leaves a mild but annoying hangover.", resonance: "Minor operative discomfort resulting from an impulsive and unfounded calculation.", direction: "MILD HANGOVER" },
+    { id: "20", I: "I_D", R: "P1", E: "D2", name: "Addictive Seduction", desc: "Deceptive superficial stimulus that drags the subject to the depths of ruin.", resonance: "Passionate captivity; aesthetic attraction hides a deep servitude.", direction: "PASSIONATE CAPTIVITY" },
+    { id: "21", I: "I_D", R: "P2", E: "P1", name: "Apogee of Blind Impulse", desc: "Great corrupt satisfaction that decays into empty inertia.", resonance: "Fleeting euphoria followed by an immediate and persistent existential emptiness.", direction: "EMPTY SATISFACTION" },
+    { id: "22", I: "I_D", R: "P2", E: "P2", name: "False Autonomy", desc: "Success based on transgression that appears powerful but alienates.", resonance: "Illusory sovereignty; transgressive enjoyment weakens the foundations of understanding.", direction: "ILLUSORY SOVEREIGNTY" },
+    { id: "23", I: "I_D", R: "P2", E: "D1", name: "Hangover of Excess", desc: "Excessive kinetic pleasure followed by inevitable operative discomfort.", resonance: "Physical and mental discomfort; the inescapable bill of uncontrolled enjoyment.", direction: "OPERATIVE DISCOMFORT" },
+    { id: "24", I: "I_D", R: "P2", E: "D2", name: "Abyss of Excess", desc: "Destructive euphoria that catastrophically collapses the conatus.", resonance: "Dissolution of the subject; excessive stimulus devours the power to act.", direction: "PASSIONATE DESTRUCTION" },
+    { id: "25", I: "I_D", R: "D1", E: "P1", name: "Fortunate Lesson", desc: "Corrective friction from bad intention that sets the subject straight.", resonance: "Corrective learning; minor pain acts as a compass toward good sense.", direction: "TIMELY CORRECTION" },
+    { id: "26", I: "I_D", R: "D1", E: "P2", name: "Redeemed Transgression", desc: "Minor pain from an impure act offset by a later gain.", resonance: "Mitigation of error; course correction after a minor initial fault.", direction: "PARTIAL REDEMPTION" },
+    { id: "27", I: "I_D", R: "D1", E: "D1", name: "Recurrent Corrupt Friction", desc: "Constant loop of minor misfortunes from malpractice.", resonance: "Harmful stagnation; systematic repetition of operative miscalculations.", direction: "FRICTION LOOP" },
+    { id: "28", I: "I_D", R: "D1", E: "D2", name: "Degenerative Spiral", desc: "Initial wear that precipitates a deep fall over time.", resonance: "Cascading deterioration; each wrong decision accelerates the system's collapse.", direction: "DESTRUCTIVE SPIRAL" },
+    { id: "29", I: "I_D", R: "D2", E: "P1", name: "Severe Sterile Punishment", desc: "Great initial harm with slight later mitigation and no learning.", resonance: "Useless suffering; severe punishment that brings no clarity or growth.", direction: "STERILE SUFFERING" },
+    { id: "30", I: "I_D", R: "D2", E: "P2", name: "Paradox of Catastrophe", desc: "Immense harm that, through extreme chance, becomes epiphany and triumph.", resonance: "Extreme conversion; the bottom of the abyss becomes the turning point.", direction: "LIMIT METAMORPHOSIS" },
+    { id: "31", I: "I_D", R: "D2", E: "D1", name: "Painful Servitude", desc: "Operative collapse leaving persistent aftereffects and discomfort.", resonance: "Chronic passionate subjection; the subject operates under a yoke of constant discomfort.", direction: "PASSIONATE SERVITUDE" },
+    { id: "32", I: "I_D", R: "D2", E: "D2", name: "Total Ontological Collapse", desc: "Bad intention, critical harm in the result, and absolute destruction in the effect.", resonance: "Complete annulment of the conatus; the most extreme form of servitude and pain.", direction: "DEEP TRISTITIA" }
+  ];
+
+  const MORAL_WEIGHTS = { w1: 0.45, w2: 0.55, w3: 0.05 };
+
+  function computeSaldoM(rVal, eVal) {
+    const { w1, w2, w3 } = MORAL_WEIGHTS;
+    const linear = w1 * rVal + w2 * eVal;
+    let interaction = 0;
+    if (rVal !== 0 && eVal !== 0) {
+      const sameSign = (rVal > 0 && eVal > 0) || (rVal < 0 && eVal < 0);
+      if (sameSign) {
+        interaction = w3 * Math.abs(rVal) * Math.abs(eVal) * Math.sign(rVal);
+      } else {
+        interaction = -w3 * Math.abs(rVal) * Math.abs(eVal);
+      }
+    }
+    return linear + interaction;
+  }
+
+  let state = {
+    recordId: "",
+    actName: "Kinetic Stimulus Consumption",
+    actScope: "individual",
+    actSense: "cinestesico",
+    intention: "I_B",
+    rVal: 6.0,
+    eVal: 7.0,
+    rCategory: "P2",
+    eCategory: "P2",
+    saldoM: 13.0,
+    activePerm: PERMUTATIONS_32_DB[5]
+  };
+
+  let canvasMode = 'rain';
+
+  // --- UI ELEMENTS ---
+  const inputRecordId = document.getElementById('input-record-id');
+  const inputAct = document.getElementById('input-act');
+  const inputSense = document.getElementById('input-sense');
+  const displayActName = document.getElementById('display-act-name');
+  const hudActTitle = document.getElementById('hud-act-title');
+  const hudPermCodeBtn = document.getElementById('hud-perm-code');
+
+  const btnIntentions = document.querySelectorAll('.btn-intention');
+  const btnScopes = document.querySelectorAll('.btn-scope');
+  const inputR = document.getElementById('input-r');
+  const valR = document.getElementById('val-r');
+  const labelRType = document.getElementById('label-r-type');
+
+  const inputE = document.getElementById('input-e');
+  const valE = document.getElementById('val-e');
+  const labelEType = document.getElementById('label-e-type');
+
+  const resI = document.getElementById('res-i');
+  const resR = document.getElementById('res-r');
+  const resE = document.getElementById('res-e');
+  const resM = document.getElementById('res-m');
+  const diagText = document.getElementById('diag-text');
+
+  const btnTo3D = document.getElementById('btn-to-3d');
+  const btnToCalc = document.getElementById('btn-to-calc');
+  const btnTo3DFromAff = document.getElementById('btn-to-3d-from-aff');
+
+  const screenCalc = document.getElementById('screen-calc');
+  const screen3D = document.getElementById('screen-3d');
+  const screenAffective = document.getElementById('screen-affective');
+
+  const recordsModal = document.getElementById('records-modal');
+  const btnOpenRecords = document.getElementById('btn-open-records');
+  const closeModalBtn = document.getElementById('close-modal-btn');
+  const filterIdInput = document.getElementById('filter-id-input');
+  const btnClearDb = document.getElementById('btn-clear-db');
+  const supabaseRecordsTbody = document.getElementById('supabase-records-tbody');
+  const supabaseCount = document.getElementById('supabase-count');
+
+  function getMicroCategory(val) {
+    if (val >= 1.0 && val <= 5.0) return "P1";
+    if (val >= 5.1 && val <= 10.0) return "P2";
+    if (val >= -5.0 && val <= -1.0) return "D1";
+    if (val >= -10.0 && val <= -5.1) return "D2";
+    return "P1";
+  }
+
+  function getCategoryLabel(cat) {
+    switch(cat) {
+      case "P1": return "Minor Pleasure (P1)";
+      case "P2": return "Greater Pleasure (P2)";
+      case "D1": return "Minor Pain (D1)";
+      case "D2": return "Greater Pain (D2)";
+    }
+  }
+
+  function populatePermutationsTable() {
+    const tbody = document.getElementById('permutations-table-body');
+    tbody.innerHTML = '';
+    PERMUTATIONS_32_DB.forEach(p => {
+      const tr = document.createElement('tr');
+      tr.id = `perm-row-${p.id}`;
+      tr.className = "hover:bg-slate-800/50 transition cursor-pointer text-slate-300";
+      tr.innerHTML = `
+        <td class="py-2 px-1.5 font-bold text-indigo-400">${p.id}</td>
+        <td class="py-2 px-1 text-slate-400">${p.I}</td>
+        <td class="py-2 px-1 text-cyan-400 font-semibold">${p.R}</td>
+        <td class="py-2 px-1 text-emerald-400 font-semibold">${p.E}</td>
+        <td class="py-2 px-2 font-medium text-slate-200">${p.name}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  async function renderRecordsTable(filter = "") {
+    const records = await SupabaseDB.query(filter);
+    supabaseRecordsTbody.innerHTML = '';
+    if (records.length === 0) {
+      supabaseRecordsTbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-500 font-mono">No records found in Supabase.</td></tr>`;
+    } else {
+      records.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-800/50 transition text-slate-300";
+        const dateStr = r.created_at ? new Date(r.created_at).toLocaleDateString('en-US') : 'N/A';
+        tr.innerHTML = `
+          <td class="py-2 px-2 font-bold text-indigo-300">${r.nombre || 'N/A'}</td>
+          <td class="py-2 px-2 text-slate-200 truncate max-w-[150px]">${r.acto || 'N/A'}</td>
+          <td class="py-2 px-1 text-cyan-400 font-mono">[${r.permutacion || 'N/A'}]</td>
+          <td class="py-2 px-1 text-slate-400">${r.ambito || 'N/A'}</td>
+          <td class="py-2 px-2 text-slate-400 text-[10px]">${dateStr}</td>
+        `;
+        supabaseRecordsTbody.appendChild(tr);
+      });
+    }
+    supabaseCount.innerText = `Total records: ${records.length}`;
+  }
+
+  function calculate() {
+    const recId = inputRecordId.value.trim() || "Anonymous";
+    const actName = inputAct.value.trim() || "Unnamed Action";
+    const rVal = parseFloat(inputR.value);
+    const eVal = parseFloat(inputE.value);
+
+    state.recordId = recId;
+    state.actName = actName;
+    state.rVal = rVal;
+    state.eVal = eVal;
+    state.rCategory = getMicroCategory(rVal);
+    state.eCategory = getMicroCategory(eVal);
+    state.saldoM = computeSaldoM(rVal, eVal);
+
+    valR.innerText = (rVal > 0 ? "+" : "") + rVal.toFixed(1);
+    valR.className = rVal >= 0 ? "text-cyan-400 font-mono font-bold text-base sm:text-lg" : "text-rose-400 font-mono font-bold text-base sm:text-lg";
+    labelRType.innerText = getCategoryLabel(state.rCategory);
+
+    valE.innerText = (eVal > 0 ? "+" : "") + eVal.toFixed(1);
+    valE.className = eVal >= 0 ? "text-emerald-400 font-mono font-bold text-base sm:text-lg" : "text-rose-400 font-mono font-bold text-base sm:text-lg";
+    labelEType.innerText = getCategoryLabel(state.eCategory);
+
+    matchPermutation();
+
+    displayActName.innerText = actName;
+    hudActTitle.innerText = actName;
+    hudPermCodeBtn.innerHTML = `<span>[ ${state.activePerm.id} • ${state.activePerm.I} • P2 • P2 ]</span><svg class="w-3 h-3 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>`;
+
+    resI.innerText = state.intention === "I_B" ? "Good (I_B)" : "Harmful (I_D)";
+    resR.innerText = `${rVal > 0 ? "+" : ""}${rVal.toFixed(1)} (${state.rCategory})`;
+    resE.innerText = `${eVal > 0 ? "+" : ""}${eVal.toFixed(1)} (${state.eCategory})`;
+    resM.innerText = `${state.saldoM > 0 ? "+" : ""}${state.saldoM.toFixed(1)}`;
+
+    if (state.saldoM > 0) {
+      resM.className = "font-mono font-bold text-emerald-400 text-sm sm:text-base";
+    } else if (state.saldoM === 0) {
+      resM.className = "font-mono font-bold text-slate-300 text-sm sm:text-base";
+    } else {
+      resM.className = "font-mono font-bold text-rose-500 text-sm sm:text-base";
+    }
+
+    diagText.innerText = `[${state.activePerm.id}] ${state.activePerm.name}: ${state.activePerm.desc}`;
+  }
+
+  function matchPermutation() {
+    const found = PERMUTATIONS_32_DB.find(p => 
+      p.I === state.intention && p.R === state.rCategory && p.E === state.eCategory
+    );
+    if (found) {
+      state.activePerm = found;
+    }
+  }
+
+  const POSITIVE_SCALE = ["Joy", "Delight", "Happiness"];
+  const NEGATIVE_SCALE = ["Sadness", "Anxiety", "Unhappiness"];
+  const AFFECT_TIER_THRESHOLDS = [5, 10];
+
+  function getDominantAffect() {
+    const m = state.saldoM;
+    if (m === 0) return { word: "Affective Equilibrium", polarity: "neutral" };
+    const abs = Math.abs(m);
+    let tier = 0;
+    if (abs > AFFECT_TIER_THRESHOLDS[1]) tier = 2;
+    else if (abs > AFFECT_TIER_THRESHOLDS[0]) tier = 1;
+
+    if (m > 0) return { word: POSITIVE_SCALE[tier], polarity: "positive" };
+    return { word: NEGATIVE_SCALE[tier], polarity: "negative" };
+  }
+
+  function calibrateCompass() {
+    const affect = getDominantAffect();
+    const needle = document.getElementById('compass-needle');
+    const label = document.getElementById('compass-affect-text');
+
+    let hash = 0;
+    for (let i = 0; i < affect.word.length; i++) {
+      hash = (hash * 31 + affect.word.charCodeAt(i)) % 360;
+    }
+    const targetAngle = hash;
+
+    needle.style.transition = 'none';
+    needle.style.transform = 'rotate(0deg)';
+    label.style.opacity = '0';
+    void needle.getBoundingClientRect();
+
+    requestAnimationFrame(() => {
+      needle.style.transition = 'transform 1.7s cubic-bezier(0.22, 1, 0.36, 1)';
+      needle.style.transform = `rotate(${1080 + targetAngle}deg)`;
+    });
+
+    setTimeout(() => {
+      label.innerText = affect.word;
+      const base = "text-[10px] sm:text-[11px] font-mono font-extrabold tracking-wide px-2 py-1 rounded text-center leading-tight transition-opacity duration-500";
+      if (affect.polarity === 'positive') {
+        label.className = `${base} bg-blue-950/85 border border-blue-500/60 text-blue-300`;
+      } else if (affect.polarity === 'negative') {
+        label.className = `${base} bg-rose-950/85 border border-rose-500/60 text-rose-300`;
+      } else {
+        label.className = `${base} bg-indigo-950/85 border border-indigo-500/60 text-indigo-300`;
+      }
+      label.style.opacity = '1';
+    }, 1500);
+  }
+
+  function highlightActivePermutationInTable() {
+    PERMUTATIONS_32_DB.forEach(p => {
+      const row = document.getElementById(`perm-row-${p.id}`);
+      if (row) row.className = "hover:bg-slate-800/50 transition cursor-pointer text-slate-300";
+    });
+    const activeRow = document.getElementById(`perm-row-${state.activePerm.id}`);
+    if (activeRow) {
+      activeRow.className = "bg-indigo-500/20 border-l-4 border-indigo-400 font-bold text-indigo-200 glow-amber";
+      activeRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  // Modal and Redirect Event Listeners
+  btnOpenRecords.addEventListener('click', async () => {
+    await renderRecordsTable(inputRecordId.value);
+    filterIdInput.value = inputRecordId.value;
+    recordsModal.classList.remove('hidden');
+  });
+
+  closeModalBtn.addEventListener('click', () => {
+    recordsModal.classList.add('hidden');
+  });
+
+  filterIdInput.addEventListener('input', async (e) => {
+    await renderRecordsTable(e.target.value);
+  });
+
+  btnClearDb.addEventListener('click', async () => {
+    if (confirm("Are you sure you want to clear the Supabase database?")) {
+      await SupabaseDB.clear();
+      await renderRecordsTable();
+    }
+  });
+
+  // CONDITIONAL COMPASS REDIRECT TO joy.html
+  document.getElementById('compass-wrapper').addEventListener('click', () => {
+    const affect = getDominantAffect();
+    const isPositive = affect.polarity === 'positive' && ['Joy', 'Delight', 'Happiness'].includes(affect.word);
+
+    if (isPositive) {
+      window.location.href = 'joy.html';
+    } else {
+      alert(`Redirection denied: current affective output ("${affect.word}") is not positive. Joy, Delight, or Happiness is required to access joy.html.`);
+    }
+  });
+
+  inputRecordId.addEventListener('input', calculate);
+  inputAct.addEventListener('input', calculate);
+  inputSense.addEventListener('change', () => {
+    state.actSense = inputSense.value;
+  });
+  inputR.addEventListener('input', calculate);
+  inputE.addEventListener('input', calculate);
+
+  btnIntentions.forEach(btn => {
+    btn.addEventListener('click', () => {
+      btnIntentions.forEach(b => {
+        b.classList.remove('active', 'border-indigo-500', 'bg-indigo-950/40', 'text-indigo-300');
+        b.classList.add('border-slate-700', 'bg-slate-800/40', 'text-slate-300');
+      });
+      btn.classList.add('active', 'border-indigo-500', 'bg-indigo-950/40', 'text-indigo-300');
+      btn.classList.remove('border-slate-700', 'bg-slate-800/40', 'text-slate-300');
+      state.intention = btn.dataset.intention;
+      calculate();
+    });
+  });
+
+  btnScopes.forEach(btn => {
+    btn.addEventListener('click', () => {
+      btnScopes.forEach(b => {
+        b.classList.remove('active', 'border-indigo-500', 'bg-indigo-950/40', 'text-indigo-300');
+        b.classList.add('border-slate-700', 'bg-slate-800/40', 'text-slate-300');
+      });
+      btn.classList.add('active', 'border-indigo-500', 'bg-indigo-950/40', 'text-indigo-300');
+      btn.classList.remove('border-slate-700', 'bg-slate-800/40', 'text-slate-300');
+      state.actScope = btn.dataset.scope;
+    });
+  });
+
+  btnTo3D.addEventListener('click', async () => {
+    // SAVE TO SUPABASE ON CLICKING "VIEW 3D MATRIX"
+    await SupabaseDB.insert({
+      id: state.recordId,
+      act: state.actName,
+      scope: state.actScope,
+      permCode: state.activePerm.id
+    });
+
+    canvasMode = 'rain';
+    screenCalc.classList.add('screen-hidden');
+    screen3D.classList.remove('screen-hidden');
+    screenAffective.classList.add('screen-hidden');
+
+    document.getElementById('hud-v-i').innerText = state.intention;
+    document.getElementById('hud-v-r').innerText = (state.rVal > 0 ? "+" : "") + state.rVal.toFixed(1) + ` (${state.rCategory})`;
+    document.getElementById('hud-v-e').innerText = (state.eVal > 0 ? "+" : "") + state.eVal.toFixed(1) + ` (${state.eCategory})`;
+
+    highlightActivePermutationInTable();
+    initOrUpdate3D();
+  });
+
+  btnToCalc.addEventListener('click', () => {
+    canvasMode = 'rain';
+    screen3D.classList.add('screen-hidden');
+    screenCalc.classList.remove('screen-hidden');
+  });
+
+  hudPermCodeBtn.addEventListener('click', () => {
+    canvasMode = 'vortex';
+    screen3D.classList.add('screen-hidden');
+    screenAffective.classList.remove('screen-hidden');
+
+    const p = state.activePerm;
+    document.getElementById('aff-formula-header').innerText = `[ Permutation ${p.id} • ${p.I} • (Result) ${p.R} • (Effect) ${p.E} ]`;
+
+    const saldoBadge = document.getElementById('aff-saldo-badge');
+    saldoBadge.innerText = `M = ${state.saldoM > 0 ? "+" : ""}${state.saldoM.toFixed(1)}`;
+    if (state.saldoM > 0) {
+      saldoBadge.className = "px-4 py-1.5 rounded bg-emerald-950/90 border border-emerald-500/60 text-emerald-300 font-mono text-xs font-bold shadow-md";
+    } else if (state.saldoM === 0) {
+      saldoBadge.className = "px-4 py-1.5 rounded bg-slate-900/90 border border-slate-700 text-slate-300 font-mono text-xs font-bold shadow-md";
+    } else {
+      saldoBadge.className = "px-4 py-1.5 rounded bg-rose-950/90 border border-rose-500/60 text-rose-300 font-mono text-xs font-bold shadow-md";
+    }
+
+    document.getElementById('aff-title').innerText = p.name;
+    document.getElementById('aff-desc').innerText = p.desc;
+    document.getElementById('aff-resonance').innerText = p.resonance;
+
+    calibrateCompass();
+
+    const dirElem = document.getElementById('aff-direction');
+    dirElem.innerText = p.direction;
+    if (state.saldoM > 0) {
+      dirElem.className = "font-bold text-emerald-400 px-3 py-1 rounded bg-emerald-950/80 border border-emerald-500/40 shadow";
+    } else if (state.saldoM === 0) {
+      dirElem.className = "font-bold text-indigo-400 px-3 py-1 rounded bg-indigo-950/80 border border-indigo-500/40 shadow";
+    } else {
+      dirElem.className = "font-bold text-rose-400 px-3 py-1 rounded bg-rose-950/80 border border-rose-500/40 shadow";
+    }
+  });
+
+  btnTo3DFromAff.addEventListener('click', () => {
+    canvasMode = 'rain';
+    screenAffective.classList.add('screen-hidden');
+    screen3D.classList.remove('screen-hidden');
+  });
+
+  // --- MATRIX CANVAS — Green Matrix style with X's and infinities ---
+  function initMatrixCanvas() {
+    const canvas = document.getElementById('matrix-canvas');
+    const ctx = canvas.getContext('2d');
+
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
+
+    const chars = 'X∞X∞X∞01';
+    const fontSize = 14;
+    const columns = Math.floor(width / fontSize);
+    const drops = Array(columns).fill(1);
+
+    const particleCount = 120;
+    let particles = [];
+    for (let i = 0; i < particleCount; i++) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        angle: Math.random() * Math.PI * 2,
+        radius: Math.random() * 350 + 50,
+        speed: Math.random() * 0.02 + 0.01,
+        char: chars[Math.floor(Math.random() * chars.length)]
+      });
+    }
+
+    window.addEventListener('resize', () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    });
+
+    function draw() {
+      if (canvasMode === 'rain') {
+        ctx.fillStyle = 'rgba(3, 5, 8, 0.08)';
+        ctx.fillRect(0, 0, width, height);
+        ctx.font = `${fontSize}px "JetBrains Mono", monospace`;
+
+        for (let i = 0; i < drops.length; i++) {
+          const text = chars[Math.floor(Math.random() * chars.length)];
+          ctx.fillStyle = (text === 'X' || text === '∞') ? '#00ff41' : '#008f11';
+          ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+          if (drops[i] * fontSize > height && Math.random() > 0.975) {
+            drops[i] = 0;
+          }
+          drops[i]++;
+        }
+      } else {
+        ctx.fillStyle = 'rgba(3, 5, 8, 0.15)';
+        ctx.fillRect(0, 0, width, height);
+
+        const centerX = width / 2;
+        const centerY = height / 2;
+
+        particles.forEach(p => {
+          p.angle += p.speed;
+          p.radius -= 0.4;
+          if (p.radius < 40) p.radius = Math.random() * 250 + 200;
+
+          const x = centerX + Math.cos(p.angle) * p.radius;
+          const y = centerY + Math.sin(p.angle) * p.radius;
+
+          ctx.font = `13px "JetBrains Mono", monospace`;
+          ctx.fillStyle = state.saldoM >= 0 ? '#00ff41' : '#f43f5e';
+          ctx.globalAlpha = Math.min(1, p.radius / 300);
+          ctx.fillText(p.char, x, y);
+        });
+        ctx.globalAlpha = 1.0;
+      }
+    }
+
+    setInterval(draw, 35);
+  }
+
+  // --- THREE.JS ENGINE ---
+  let scene, camera, renderer, controls;
+  let curveMesh, nodeT0, nodeT1, nodeT2;
+  let is3DInitialized = false;
+
+  function initOrUpdate3D() {
+    const container = document.getElementById('canvas-container');
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+
+    if (!is3DInitialized) {
+      scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0x05070a, 0.05);
+
+      camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+      camera.position.set(0, 3, 11);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      container.appendChild(renderer.domElement);
+
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.enableZoom = true;
+
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+      scene.add(ambientLight);
+
+      const dirLight = new THREE.DirectionalLight(0x6366f1, 1.2);
+      dirLight.position.set(5, 10, 7);
+      scene.add(dirLight);
+
+      const gridBox = new THREE.BoxHelper(new THREE.Mesh(
+        new THREE.BoxGeometry(8, 6, 8)
+      ), 0x334155);
+      scene.add(gridBox);
+
+      window.addEventListener('resize', () => {
+        const w = container.clientWidth;
+        const h = container.clientHeight;
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      });
+
+      function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+      }
+      animate();
+
+      is3DInitialized = true;
+    }
+
+    renderVectorTrajectory();
+  }
+
+  function renderVectorTrajectory() {
+    if (curveMesh) scene.remove(curveMesh);
+    if (nodeT0) scene.remove(nodeT0);
+    if (nodeT1) scene.remove(nodeT1);
+    if (nodeT2) scene.remove(nodeT2);
+
+    const xIntention = state.intention === "I_B" ? -2.5 : 2.5;
+    const pT0 = new THREE.Vector3(xIntention, 2.0, 0);
+    const pT1 = new THREE.Vector3((state.rVal > 0 ? 1 : -1) * Math.min(Math.abs(state.rVal) * 0.3, 3.5), 0.0, state.rVal * 0.25);
+    const pT2 = new THREE.Vector3(Math.max(-3.8, Math.min(3.8, state.saldoM * 0.2)), -2.0, state.eVal * 0.25);
+
+    const curve = new THREE.QuadraticBezierCurve3(pT0, pT1, pT2);
+    const tubeGeo = new THREE.TubeGeometry(curve, 32, 0.09, 8, false);
+
+    let vectorColor = 0x10b981;
+    if (state.saldoM < 0) vectorColor = 0xf43f5e;
+    if (state.saldoM === 0) vectorColor = 0xf59e0b;
+
+    const tubeMat = new THREE.MeshStandardMaterial({
+      color: vectorColor,
+      roughness: 0.2,
+      metalness: 0.8,
+      emissive: vectorColor,
+      emissiveIntensity: 0.5
+    });
+
+    curveMesh = new THREE.Mesh(tubeGeo, tubeMat);
+    scene.add(curveMesh);
+
+    nodeT0 = createNodeSphere(pT0, 0xf59e0b);
+    nodeT1 = createNodeSphere(pT1, 0x06b6d4);
+    nodeT2 = createNodeSphere(pT2, vectorColor);
+
+    scene.add(nodeT0);
+    scene.add(nodeT1);
+    scene.add(nodeT2);
+  }
+
+  function createNodeSphere(position, colorHex) {
+    const geo = new THREE.SphereGeometry(0.22, 16, 16);
+    const mat = new THREE.MeshStandardMaterial({ color: colorHex, emissive: colorHex, emissiveIntensity: 0.7 });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.copy(position);
+    return mesh;
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    populatePermutationsTable();
+    initMatrixCanvas();
+    calculate();
+
+    // Floating glow on touch for mobile devices (screen 3 / affective console)
+    const affGlowItems = document.querySelectorAll('#screen-affective .aff-hud-item-text, #screen-affective .aff-hud-item-box');
+    affGlowItems.forEach(el => {
+      el.addEventListener('touchstart', () => {
+        affGlowItems.forEach(o => o.classList.remove('aff-touch-glow'));
+        el.classList.add('aff-touch-glow');
+      }, { passive: true });
+      el.addEventListener('touchend', () => {
+        setTimeout(() => el.classList.remove('aff-touch-glow'), 900);
+      }, { passive: true });
+    });
+  });
+</script>
+</body>
+</html>
